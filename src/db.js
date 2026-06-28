@@ -1,32 +1,47 @@
 import Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
 import { CONFIG } from "./config.js";
 
 export const db = new Database(CONFIG.DB_PATH);
 
+const migrationsDir = path.resolve("./src/migrations");
+
 db.exec(`
-CREATE TABLE IF NOT EXISTS launches (
-  mint TEXT PRIMARY KEY,
-  creator TEXT,
-  bonding_curve TEXT,
-  associated_bonding_curve TEXT,
-  signature TEXT,
-  slot INTEGER,
-  created_at INTEGER
+CREATE TABLE IF NOT EXISTS migrations (
+  id TEXT PRIMARY KEY,
+  applied_at INTEGER
 );
-
-CREATE TABLE IF NOT EXISTS trades (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  signature TEXT,
-  wallet TEXT,
-  mint TEXT,
-  side TEXT,
-  sol_amount REAL,
-  token_amount REAL,
-  slot INTEGER,
-  timestamp INTEGER,
-  token_age_seconds INTEGER
-);
-
-CREATE INDEX IF NOT EXISTS idx_trades_mint ON trades(mint);
-CREATE INDEX IF NOT EXISTS idx_trades_wallet ON trades(wallet);
 `);
+
+function runMigrations() {
+  const files = fs
+    .readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+
+  for (const file of files) {
+    const alreadyApplied = db
+      .prepare("SELECT id FROM migrations WHERE id = ?")
+      .get(file);
+
+    if (alreadyApplied) continue;
+
+    const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+
+    const transaction = db.transaction(() => {
+      db.exec(sql);
+
+      db.prepare(`
+        INSERT INTO migrations (id, applied_at)
+        VALUES (?, ?)
+      `).run(file, Math.floor(Date.now() / 1000));
+    });
+
+    transaction();
+
+    console.log(`Migration applied: ${file}`);
+  }
+}
+
+runMigrations();
