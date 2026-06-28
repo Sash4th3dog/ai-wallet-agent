@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "clusters": [
+    {
+      "id": "gtagy_cluster",
+      "name": "GTAGY Smart Cluster",
+      "tier": "S",
+      "enabled": true,
+      "wallets": [
+        {
+          "address": "gtagyESa99t49VmUqnnfsuowYnigSNKuYXdXWyXWNdd",
+          "role": "leader",
+          "weight": 1.0,
+          "confidence": 100,
+          "notes": "Main wallet under investigation"
+        }
+      ]
+    }
+  ]
+}
