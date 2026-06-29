@@ -1,1 +1,1 @@
-# ai-wallet-agent
+# wallet-chaser
